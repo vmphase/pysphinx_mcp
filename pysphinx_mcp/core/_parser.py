@@ -23,12 +23,15 @@ SOFTWARE.
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any, ClassVar
 
 from lxml import html as lxhtml
 
 from pysphinx_mcp.types import Section
+
+logger = logging.getLogger(__name__)
 
 _BLOCK_TAGS: frozenset[str] = frozenset(
     {
@@ -79,6 +82,10 @@ class PageParser:
         """Parse raw HTML into an lxml tree."""
         tree = lxhtml.fromstring(html)  # pyright: ignore[reportUnknownMemberType]
         if tree is None:
+            logger.warning(
+                "lxml.fromstring returned None for input of length %d",
+                len(html),
+            )
             raise ValueError("lxml.fromstring returned None")
         return tree
 

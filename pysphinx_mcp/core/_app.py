@@ -23,9 +23,13 @@ SOFTWARE.
 
 from __future__ import annotations
 
+import logging
+
 from mcp.server.fastmcp import FastMCP
 
 from pysphinx_mcp.core._service import DocsService
+
+logger = logging.getLogger(__name__)
 
 
 def create_app() -> FastMCP:
@@ -34,11 +38,12 @@ def create_app() -> FastMCP:
     Wiring is internal — the service owns a single ``PageFetcher`` and
     gets cleaned up when the process exits.
     """
+    logger.info("Initializing Sphinx MCP...")
     service = DocsService()
 
     mcp = FastMCP(
-        "Sphinx Docs Reader",
-        instructions="Read and search Sphinx-generated documentation sites. "
+        "Sphinx MCP",
+        instructions="Read and search Sphinx-generated documentations. "
         "Provide a base URL to any Sphinx docs site to browse, search, "
         "and read pages using the Sphinx search index for fast lookups.",
     )
@@ -104,4 +109,5 @@ def create_app() -> FastMCP:
         """
         return await service.sections(base_url, page_path)
 
+    logger.info("Initialized successfully: 4 tools registered.")
     return mcp

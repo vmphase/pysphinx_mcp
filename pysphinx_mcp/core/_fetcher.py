@@ -23,11 +23,14 @@ SOFTWARE.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from curl_cffi.requests import AsyncSession
 
 from pysphinx_mcp.types._errors import FetchError
+
+logger = logging.getLogger(__name__)
 
 
 class PageFetcher:
@@ -42,20 +45,25 @@ class PageFetcher:
 
     async def _get_session(self) -> Any:
         if self._session is None:
+            logger.debug("Creating new curl_cffi session (impressionate=chrome)")
             self._session = AsyncSession(impersonate="chrome")
         return self._session
 
     async def fetch(self, url: str, *, timeout: float = 30.0) -> str:
         """GET *url* and return the response body as text."""
         session: Any = await self._get_session()
+        logger.debug("GET %s (timeout=%.1fs)", url, timeout)
         try:
             resp: Any = await session.get(url, timeout=timeout)
             resp.raise_for_status()
+            logger.debug("Fetched %s (%d bytes)", url, len(resp.text))
             return resp.text
         except Exception as exc:
+            logger.warning("Fetch failed for %s: %s", url, exc)
             raise FetchError(str(exc)) from exc
 
     async def close(self) -> None:
         if self._session is not None:
+            logger.debug("Closing curl_cffi session")
             await self._session.close()
             self._session = None

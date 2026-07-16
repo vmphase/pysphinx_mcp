@@ -24,10 +24,13 @@ SOFTWARE.
 from __future__ import annotations
 
 import json
+import logging
 import re
 from typing import Any, ClassVar
 
 from pysphinx_mcp.types._errors import SearchIndexError
+
+logger = logging.getLogger(__name__)
 
 
 class SearchIndex:
@@ -45,13 +48,21 @@ class SearchIndex:
     def from_js(cls, content: str) -> SearchIndex:
         match = cls._extract_re.search(content)
         if not match:
+            logger.warning(
+                "searchindex.js did not match expected Search.setIndex() format"
+            )
             raise SearchIndexError(
                 "could not locate Search.setIndex() in searchindex.js",
             )
         try:
-            return cls(json.loads(match.group(1)))
+            data = json.loads(match.group(1))
         except json.JSONDecodeError as exc:
+            logger.warning("Failed to parse searchindex.js JSON: %s", exc)
             raise SearchIndexError(str(exc)) from exc
+
+        idx = cls(data)
+        logger.debug("Loaded search index with %d docnames", len(idx.docnames))
+        return idx
 
     @property
     def docnames(self) -> list[str]:
@@ -67,24 +78,25 @@ class SearchIndex:
         return f"{docname}.html"
 
     def search(self, query: str) -> list[dict[str, str]]:
-        q = query.lower()
-        if not q:
+        query_lower = query.lower()
+
+        if not query_lower:
             return []
 
         terms: dict[str, int | list[int]] = self._raw.get("terms", {})
         matched: set[int] = set()
 
         for term, ids in terms.items():
-            if q in term.lower():
+            if query_lower in term.lower():
                 if isinstance(ids, int):
                     matched.add(ids)
                 else:
                     matched.update(ids)
 
-        docnames = self.docnames
-        titles = self.titles
-        return [
-            {"path": self.path_for(docnames[i]), "title": titles[i]}
+        results = [
+            {"path": self.path_for(self.docnames[i]), "title": self.titles[i]}
             for i in sorted(matched)
-            if i < len(titles) and titles[i]
+            if i < len(self.titles) and self.titles[i]
         ]
+        logger.debug("Search index query %r matched %d page(s)", query, len(results))
+        return results
