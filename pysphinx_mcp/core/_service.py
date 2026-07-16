@@ -201,6 +201,6 @@ class DocsService:
         try:
             tree = PageParser.parse(await self._fetcher.fetch(urljoin(base, path)))
             return query in PageParser.text(tree).lower()
-        except (FetchError, ValueError):
+        except (FetchError, ValueError) as exc:
             logger.debug("Skipping %s during page scan: %s", path, exc)
             return False
