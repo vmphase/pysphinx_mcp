@@ -1,0 +1,45 @@
+name: PR Follows Template
+
+on:
+    pull_request_target:
+        types: [opened, edited, synchronize, reopened]
+
+permissions:
+    pull-requests: write
+    issues: write
+    contents: read
+
+jobs:
+    template-check:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout base branch
+              uses: actions/checkout@v7
+
+            - name: Enforce Template
+              uses: actions/github-script@v9
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      const path = require('path');
+                      const script = require(path.resolve('.github/scripts/pr-template.js'));
+                      await script({ github, context, core });
+
+    auto-apply-tags:
+        runs-on: ubuntu-latest
+        if: |
+            always() &&
+            (needs.template-check.result == 'success' || needs.template-check.result == 'skipped')
+        needs: [template-check]
+        steps:
+            - name: Checkout base branch
+              uses: actions/checkout@v7
+
+            - name: Auto-apply tag
+              uses: actions/github-script@v9
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      const path = require('path');
+                      const script = require(path.resolve('.github/scripts/auto-tags.js'));
+                      await script({ github, context, core });
