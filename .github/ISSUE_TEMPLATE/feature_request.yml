@@ -1,0 +1,61 @@
+name: Feature Proposal
+description: Propose a new capability or enhancement for the library.
+labels: ["idea: new feature"]
+body:
+    - type: textarea
+      id: summary
+      attributes:
+          label: Proposal Summary
+          description: A concise title for this feature proposal.
+          placeholder: "e.g., Support for filtering search results by section"
+      validations:
+          required: true
+    - type: dropdown
+      id: scope
+      attributes:
+          label: Functional Scope
+          description: Which part of the library does this proposal target?
+          multiple: false
+          options:
+              - Page Listing / Reading
+              - Search
+              - Section / Heading Parsing
+              - Documentation
+              - Other / Miscellaneous
+      validations:
+          required: true
+    - type: textarea
+      id: problem_statement
+      attributes:
+          label: Problem Statement
+          description: What specific limitation does this feature address?
+          placeholder: "Currently, there's no way to..."
+      validations:
+          required: true
+    - type: textarea
+      id: proposed_implementation
+      attributes:
+          label: Proposed Implementation
+          description: Describe your ideal solution. Including a code snippet helps understand the intended API.
+          render: python
+          placeholder: |
+              # Proposed API usage
+              search_docs(base_url, query, section="...")
+      validations:
+          required: true
+    - type: textarea
+      id: current_workaround
+      attributes:
+          label: Current Workaround
+          description: How are you currently achieving this functionality, if at all?
+      validations:
+          required: false
+    - type: checkboxes
+      id: checklist
+      attributes:
+          label: Submission Requirements
+          options:
+              - label: I have verified this feature does not already exist in the latest version.
+                required: true
+              - label: I have searched existing issues for similar proposals.
+                required: true
