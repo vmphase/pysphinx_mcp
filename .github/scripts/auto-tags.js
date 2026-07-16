@@ -5,7 +5,6 @@ module.exports = async ({ github, context, core }) => {
         "Breaking change": "status: breaking change",
         "Refactor / internal cleanup": "type: refactor",
         "CI / dependency update": "area: dependencies",
-        "Documentation update": "type: documentation",
     };
     const autoLabels = new Set(Object.values(tags));
     const pr = context.payload.pull_request;
