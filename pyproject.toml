@@ -1,0 +1,115 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pysphinx-mcp"
+dynamic = ["version"]
+description = "MCP server for reading Sphinx documentation"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+authors = [
+    { name = "vmphase" },
+]
+maintainers = [
+    { name = "vmphase" },
+]
+keywords = [
+    "mcp",
+    "sphinx",
+    "documentation",
+    "docs",
+    "reader",
+    "model-context-protocol",
+    "opencode",
+    "claude",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: AsyncIO",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Documentation",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dependencies = [
+    "mcp>=1.28.0,<2",
+    "lxml>=5.0.0,<6",
+    "curl-cffi>=0.9.0,<1",
+    "msgspec>=0.20.0,<1",
+]
+
+[project.urls]
+Repository = "https://github.com/vmphse/pysphinx_mcp"
+
+[tool.setuptools.dynamic]
+version = { attr = "pysphinx_mcp._version.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["pysphinx_mcp*"]
+
+[tool.basedpyright]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+reportPrivateUsage = false
+reportUnnecessaryComparison = false
+reportUnnecessaryIsInstance = false
+exclude = [".ruff_cache/", "__pycache__/"]
+
+[tool.ruff]
+exclude = [".ruff_cache/", "__pycache__/"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "W",
+    "I",
+    "D",
+    "RUF",
+]
+ignore = [
+    "E501",
+
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D107",
+    "D200",
+    "D203",
+    "D205",
+    "D212",
+    "D400",
+    "D404",
+    "D415",
+
+    "F403",
+    "F405",
+
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    "RUF029",
+]
+
+unfixable = ["E501"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-wrap-aliases = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.pytest.ini_options]
+markers = ["integration: marks tests that require a live internet connection"]
