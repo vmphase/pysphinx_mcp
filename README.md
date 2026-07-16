@@ -25,12 +25,12 @@ Register with any MCP host:
 
 ```json
 {
-  "mcpServers": {
-    "sphinx-docs": {
-      "command": "python",
-      "args": ["-m", "pysphinx_mcp"]
+    "mcpServers": {
+        "sphinx-docs": {
+            "command": "python",
+            "args": ["-m", "pysphinx_mcp"]
+        }
     }
-  }
 }
 ```
 
@@ -38,4 +38,10 @@ Or run directly:
 
 ```
 python -m pysphinx_mcp
+```
+
+Use `--log-level` to control logging verbosity (default: `INFO`):
+
+```
+python -m pysphinx_mcp --log-level DEBUG
 ```
