@@ -35,3 +35,13 @@ class Section(msgspec.Struct):
     level: str
     text: str
     id: str
+
+
+class ApiSignature(msgspec.Struct):
+    name: str
+    qualified_name: str
+    type: str
+    signature: str
+    parameters: list[str]
+    docstring: str
+    version_added: str | None = None

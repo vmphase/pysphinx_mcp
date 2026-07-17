@@ -23,12 +23,15 @@ SOFTWARE.
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any, ClassVar
 
 from lxml import html as lxhtml
 
-from pysphinx_mcp.types import Section
+from pysphinx_mcp.types import ApiSignature, Section
+
+logger = logging.getLogger(__name__)
 
 _BLOCK_TAGS: frozenset[str] = frozenset(
     {
@@ -148,6 +151,79 @@ class PageParser:
 
         if tag in _BLOCK_TAGS:
             parts.append("\n")
+
+    @classmethod
+    def api_signature(cls, tree: Any, object_path: str) -> ApiSignature | None:
+        heading = next(iter(tree.xpath(f"//dt[@id='{object_path}']")), None)
+        if heading is None:
+            logger.debug("No heading found for %r", object_path)
+            return None
+
+        description = heading.getnext()
+        if description is None or description.tag != "dd":
+            logger.debug("No <dd> sibling for %r", object_path)
+            return None
+
+        parent = heading.getparent()
+        kind = next(
+            (
+                t
+                for t in (parent.get("class", "") if parent is not None else "").split()
+                if t
+                in {
+                    "function",
+                    "class",
+                    "method",
+                    "property",
+                    "staticmethod",
+                    "classmethod",
+                    "attribute",
+                }
+            ),
+            "unknown",
+        )
+
+        version_added = next(
+            (
+                el.text_content().strip()
+                for el in description.xpath(".//*[contains(@class, 'versionadded')]")
+                if el.text_content().strip()
+            ),
+            None,
+        )
+
+        logger.debug(
+            "Resolved %s (%s) with %d parameter(s)",
+            object_path,
+            kind,
+            len(heading.xpath(".//*[contains(@class, 'sig-param')]")),
+        )
+
+        return ApiSignature(
+            name=object_path.split(".")[-1],
+            qualified_name=object_path,
+            type=kind,
+            signature=str(heading.text_content().strip()),
+            parameters=[
+                str(el.text_content().strip())
+                for el in heading.xpath(".//*[contains(@class, 'sig-param')]")
+                if el.text_content().strip()
+            ],
+            docstring=cls._description_text(description),
+            version_added=version_added,
+        )
+
+    @staticmethod
+    def _description_text(description: Any) -> str:
+        for nested in description.xpath(".//dl"):
+            parent = nested.getparent()
+            if parent is not None:
+                parent.remove(nested)
+
+        parts: list[str] = []
+        PageParser._walk_text(description, parts)
+        raw = re.sub(r"[ \t]+", " ", " ".join(parts))
+        return re.sub(r"\n{3,}", "\n\n", raw).strip()
 
     @staticmethod
     def sections(tree: Any) -> list[Section]:

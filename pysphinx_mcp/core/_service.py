@@ -24,14 +24,19 @@ SOFTWARE.
 from __future__ import annotations
 
 import json
+import logging
 from functools import lru_cache
 from typing import Any
 from urllib.parse import urljoin
+
+import msgspec
 
 from pysphinx_mcp.core._fetcher import PageFetcher
 from pysphinx_mcp.core._parser import PageParser
 from pysphinx_mcp.core._search import SearchIndex
 from pysphinx_mcp.types._errors import FetchError, SearchIndexError
+
+logger = logging.getLogger(__name__)
 
 
 def _normalise(base: str) -> str:
@@ -118,6 +123,61 @@ class DocsService:
             {"level": s.level, "text": s.text, "id": s.id}
             for s in PageParser.sections(tree)
         ]
+
+    async def api_signature(
+        self,
+        base_url: str,
+        object_path: str,
+    ) -> dict[str, object] | None:
+        base = _resolve(base_url)
+
+        result = await self._fetch_signature(base, object_path)
+        if result is not None:
+            return result
+
+        candidates = self._rank_pages(await self.list_pages(base), object_path)
+        for page in candidates:
+            result = await self._fetch_signature(base, object_path, page["path"])
+            if result is not None:
+                return result
+
+        return None
+
+    async def _fetch_signature(
+        self,
+        base: str,
+        object_path: str,
+        page_path: str | None = None,
+    ) -> dict[str, object] | None:
+        if page_path is None:
+            segments = object_path.split(".")
+            if len(segments) < 2:
+                return None
+            page_path = f"{'.'.join(segments[:-1])}.html"
+
+        try:
+            sig = PageParser.api_signature(
+                PageParser.parse(await self._fetcher.fetch(urljoin(base, page_path))),
+                object_path,
+            )
+        except (FetchError, ValueError):
+            return None
+
+        return msgspec.to_builtins(sig) if sig is not None else None
+
+    @staticmethod
+    def _rank_pages(
+        pages: list[dict[str, str]],
+        object_path: str,
+    ) -> list[dict[str, str]]:
+        components = object_path.split(".")
+        return sorted(
+            pages,
+            key=lambda p: sum(
+                c in p["path"].lower().replace("/", ".") for c in components
+            ),
+            reverse=True,
+        )
 
     @staticmethod
     def _from_index(js: str) -> list[dict[str, str]]:

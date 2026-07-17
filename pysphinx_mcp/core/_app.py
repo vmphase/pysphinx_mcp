@@ -104,4 +104,22 @@ def create_app() -> FastMCP:
         """
         return await service.sections(base_url, page_path)
 
+    @mcp.tool()
+    async def get_api_signature(  # pyright: ignore[reportUnusedFunction]
+        base_url: str,
+        object_path: str,
+    ) -> dict[str, object] | None:
+        """Resolve a specific class/function from autodoc-generated pages and
+        return its signature, parameters and docstring (not the whole page).
+
+        Parameters
+        ----------
+        base_url : str
+            Root URL of the Sphinx documentation (e.g. https://docs.python.org/3/)
+        object_path : str
+            Fully qualified name of the object (e.g. os.path.join,
+            collections.OrderedDict.popitem)
+        """
+        return await service.api_signature(base_url, object_path)
+
     return mcp

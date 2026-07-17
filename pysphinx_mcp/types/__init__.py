@@ -27,6 +27,14 @@ from pysphinx_mcp.types._errors import (
     ParseError,
     SearchIndexError,
 )
-from pysphinx_mcp.types._models import PageInfo, Section
+from pysphinx_mcp.types._models import ApiSignature, PageInfo, Section
 
-__all__ = ("DocsClientError", "FetchError", "PageInfo", "ParseError", "SearchIndexError", "Section")
+__all__ = (
+    "ApiSignature",
+    "DocsClientError",
+    "FetchError",
+    "PageInfo",
+    "ParseError",
+    "SearchIndexError",
+    "Section",
+)
