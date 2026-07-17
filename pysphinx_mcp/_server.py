@@ -23,7 +23,9 @@ SOFTWARE.
 
 from mcp.server.fastmcp import FastMCP
 
-import pysphinx_mcp
+from pysphinx_mcp.core._service import DocsService
+
+_service = DocsService()
 
 mcp = FastMCP(
     "Sphinx Docs Reader",
@@ -32,8 +34,32 @@ mcp = FastMCP(
     "and read pages using the Sphinx search index for fast lookups.",
 )
 
-mcp.tool()(pysphinx_mcp.list_pages)
-mcp.tool()(pysphinx_mcp.search_docs)
-mcp.tool()(pysphinx_mcp.read_page)
-mcp.tool()(pysphinx_mcp.list_sections)
-mcp.tool()(pysphinx_mcp.get_api_signature)
+
+async def list_pages(base_url: str) -> list[dict[str, str]]:
+    return await _service.list_pages(base_url)
+
+
+async def search_docs(base_url: str, query: str) -> list[dict[str, str]]:
+    return await _service.search(base_url, query)
+
+
+async def read_page(base_url: str, page_path: str) -> str:
+    return await _service.read(base_url, page_path)
+
+
+async def list_sections(base_url: str, page_path: str) -> list[dict[str, str]]:
+    return await _service.sections(base_url, page_path)
+
+
+async def get_api_signature(
+    base_url: str,
+    object_path: str,
+) -> dict[str, object] | None:
+    return await _service.api_signature(base_url, object_path)
+
+
+mcp.tool()(list_pages)
+mcp.tool()(search_docs)
+mcp.tool()(read_page)
+mcp.tool()(list_sections)
+mcp.tool()(get_api_signature)
