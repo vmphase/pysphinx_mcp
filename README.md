@@ -37,12 +37,6 @@ Register with any MCP host:
 }
 ```
 
-Or run directly:
-
-```
-python -m pysphinx_mcp
-```
-
 ### As a library
 
 Each tool is an async function, import and call from your own code:

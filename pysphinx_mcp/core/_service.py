@@ -23,7 +23,6 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import logging
 from functools import lru_cache
 from typing import Any
 from urllib.parse import urljoin
@@ -34,8 +33,6 @@ from pysphinx_mcp.core._fetcher import PageFetcher
 from pysphinx_mcp.core._parser import PageParser
 from pysphinx_mcp.core._search import SearchIndex
 from pysphinx_mcp.types._errors import FetchError, SearchIndexError
-
-logger = logging.getLogger(__name__)
 
 
 def _normalise(base: str) -> str:
