@@ -23,7 +23,6 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import json
 import logging
 from functools import lru_cache
 from typing import Any
@@ -67,7 +66,7 @@ class DocsService:
         try:
             js = await self._fetcher.fetch(urljoin(base, "searchindex.js"))
             return self._from_index(js)
-        except (FetchError, SearchIndexError, json.JSONDecodeError):
+        except (FetchError, SearchIndexError, msgspec.ValidationError):
             return await self._scrape(base)
 
     async def read(self, base_url: str, page_path: str) -> str:

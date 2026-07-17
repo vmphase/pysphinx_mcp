@@ -23,9 +23,10 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import json
 import re
 from typing import Any, ClassVar
+
+import msgspec
 
 from pysphinx_mcp.types._errors import SearchIndexError
 
@@ -49,8 +50,8 @@ class SearchIndex:
                 "could not locate Search.setIndex() in searchindex.js",
             )
         try:
-            return cls(json.loads(match.group(1)))
-        except json.JSONDecodeError as exc:
+            return cls(msgspec.json.decode(match.group(1)))
+        except msgspec.ValidationError as exc:
             raise SearchIndexError(str(exc)) from exc
 
     @property
