@@ -21,6 +21,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from pysphinx_mcp._server import mcp
+from mcp.server.fastmcp import FastMCP
 
-mcp.run()
+import pysphinx_mcp
+
+mcp = FastMCP(
+    "Sphinx Docs Reader",
+    instructions="Read and search Sphinx-generated documentation sites. "
+    "Provide a base URL to any Sphinx docs site to browse, search, "
+    "and read pages using the Sphinx search index for fast lookups.",
+)
+
+mcp.tool()(pysphinx_mcp.list_pages)
+mcp.tool()(pysphinx_mcp.search_docs)
+mcp.tool()(pysphinx_mcp.read_page)
+mcp.tool()(pysphinx_mcp.list_sections)
+mcp.tool()(pysphinx_mcp.get_api_signature)
