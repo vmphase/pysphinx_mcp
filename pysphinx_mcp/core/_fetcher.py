@@ -31,11 +31,7 @@ from pysphinx_mcp.types._errors import FetchError
 
 
 class PageFetcher:
-    """Async HTTP client that fetches Sphinx documentation pages.
-
-    Shares a single ``curl_cffi`` session with Chrome impersonation
-    to avoid CDN blocks.  Instantiate once and reuse.
-    """
+    """Thin async HTTP client for fetching doc pages."""
 
     def __init__(self) -> None:
         self._session: Any = None
@@ -46,16 +42,16 @@ class PageFetcher:
         return self._session
 
     async def fetch(self, url: str, *, timeout: float = 30.0) -> str:
-        """GET *url* and return the response body as text."""
-        session: Any = await self._get_session()
+        session = await self._get_session()
         try:
-            resp: Any = await session.get(url, timeout=timeout)
+            resp = await session.get(url, timeout=timeout)
             resp.raise_for_status()
             return resp.text
         except Exception as exc:
             raise FetchError(str(exc)) from exc
 
     async def close(self) -> None:
-        if self._session is not None:
-            await self._session.close()
-            self._session = None
+        if self._session is None:
+            return None
+        await self._session.close()
+        self._session = None

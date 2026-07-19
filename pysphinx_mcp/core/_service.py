@@ -35,21 +35,17 @@ from pysphinx_mcp.core._search import SearchIndex
 from pysphinx_mcp.types._errors import FetchError, SearchIndexError
 
 
-def _normalise(base: str) -> str:
+@lru_cache(maxsize=32)
+def _resolve(base: str) -> str:
     return base.rstrip("/") + "/"
 
 
-@lru_cache(maxsize=32)
-def _resolve(base: str) -> str:
-    return _normalise(base)
+def _page_url(base: str, page_path: str) -> str:
+    return page_path if page_path.startswith("http") else urljoin(base, page_path)
 
 
 class DocsService:
-    """Orchestrates fetching, parsing and searching of Sphinx docs.
-
-    Shares a single ``PageFetcher`` — call ``close()`` to release
-    the underlying HTTP session.
-    """
+    """Orchestrates fetching, parsing and searching of Sphinx docs."""
 
     def __init__(self, fetcher: PageFetcher | None = None) -> None:
         self._fetcher = fetcher or PageFetcher()
@@ -69,9 +65,7 @@ class DocsService:
     async def read(self, base_url: str, page_path: str) -> str:
         """Fetch a page and return cleaned markdown-like text."""
         base = _resolve(base_url)
-        url = (
-            urljoin(base, page_path) if not page_path.startswith("http") else page_path
-        )
+        url = _page_url(base, page_path)
 
         try:
             html = await self._fetcher.fetch(url)
@@ -97,18 +91,12 @@ class DocsService:
             pass
 
         pages = await self.list_pages(base_url)
-        results: list[dict[str, str]] = []
-        for p in pages:
-            if await self._page_contains(base, p["path"], q):
-                results.append(p)
-        return results
+        return [p for p in pages if await self._page_contains(base, p["path"], q)]
 
     async def sections(self, base_url: str, page_path: str) -> list[dict[str, Any]]:
         """Return the h1-h4 headings of *page_path*."""
         base = _resolve(base_url)
-        url = (
-            urljoin(base, page_path) if not page_path.startswith("http") else page_path
-        )
+        url = _page_url(base, page_path)
 
         try:
             tree = PageParser.parse(await self._fetcher.fetch(url))
@@ -125,16 +113,16 @@ class DocsService:
         base_url: str,
         object_path: str,
     ) -> dict[str, object] | None:
+        """Look up the API signature for *object_path*."""
         base = _resolve(base_url)
 
-        result = await self._fetch_signature(base, object_path)
-        if result is not None:
+        if (result := await self._fetch_signature(base, object_path)) is not None:
             return result
 
-        candidates = self._rank_pages(await self.list_pages(base), object_path)
-        for page in candidates:
-            result = await self._fetch_signature(base, object_path, page["path"])
-            if result is not None:
+        for page in self._rank_pages(await self.list_pages(base), object_path):
+            if (
+                result := await self._fetch_signature(base, object_path, page["path"])
+            ) is not None:
                 return result
 
         return None
@@ -193,25 +181,22 @@ class DocsService:
             return []
 
         seen: set[str] = set()
-        result: list[dict[str, str]] = []
+        pages: list[dict[str, str]] = []
         for a in tree.iter("a"):
             href = a.get("href")
-            if (
+            skip = (
                 not href
+                or href in seen
                 or not href.endswith(".html")
                 or href.startswith(("http:", "https:", "//"))
-            ):
-                continue
-            if href in seen:
+            )
+            if skip:
                 continue
             seen.add(href)
-            result.append(
-                {
-                    "path": href,
-                    "title": str(a.text_content().strip()) or href,
-                },
+            pages.append(
+                {"path": href, "title": str(a.text_content().strip()) or href},
             )
-        return result
+        return pages
 
     async def _page_contains(self, base: str, path: str, query: str) -> bool:
         try:

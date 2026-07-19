@@ -24,7 +24,6 @@ SOFTWARE.
 from __future__ import annotations
 
 import re
-from typing import Any, ClassVar
 
 from lxml import html as lxhtml
 
@@ -55,27 +54,41 @@ _BLOCK_TAGS: frozenset[str] = frozenset(
         "article",
     },
 )
+_HEADING_TAGS: tuple[str, ...] = ("h1", "h2", "h3", "h4")
+_API_KIND_TAGS: frozenset[str] = frozenset(
+    {
+        "function",
+        "class",
+        "method",
+        "property",
+        "staticmethod",
+        "classmethod",
+        "attribute",
+    },
+)
 
 _REMOVE_XPATH: str = (
     "//*[@role='navigation'] | //nav | //header | //footer | //aside | "
     "//*[contains(@class,'sidebar')] | //*[contains(@class,'sphinxsidebar')] | "
     "//*[contains(@class,'related')] | //*[@id='sidebar'] | //script | //style"
 )
+_CONTENT_ROOT_XPATHS: tuple[str, ...] = (
+    './/div[@role="main"]',
+    './/div[@class="document"]',
+    './/div[contains(@class,"body")]',
+    ".//body",
+)
+
+_TITLE_SUFFIX_RE = re.compile(r"\s*\u2014\s*.+$")
+_COLLAPSE_SPACES_RE = re.compile(r"[ \t]+")
+_COLLAPSE_BLANK_LINES_RE = re.compile(r"\n{3,}")
 
 
 class PageParser:
-    """Static methods for parsing Sphinx HTML pages with lxml.
-
-    All lxml-related parameters are typed as ``Any`` because the
-    ``lxml.html`` type stubs are incomplete (every attribute access
-    returns ``Unknown`` under strict mode).  The runtime contract is
-    still an ``lxml.html.HtmlElement``.
-    """
-
-    _title_re: ClassVar[re.Pattern[str]] = re.compile(r"\s*\u2014\s*.+$")
+    """Extracts text, sections, and API signatures from rendered Sphinx HTML."""
 
     @staticmethod
-    def parse(html: str) -> Any:
+    def parse(html: str) -> lxhtml.HtmlElement:
         """Parse raw HTML into an lxml tree."""
         tree = lxhtml.fromstring(html)  # pyright: ignore[reportUnknownMemberType]
         if tree is None:
@@ -83,74 +96,37 @@ class PageParser:
         return tree
 
     @staticmethod
-    def remove_chrome(tree: Any) -> Any:
-        """Remove navigation, sidebar, footer etc. from the tree (in-place)."""
-        for el in tree.xpath(_REMOVE_XPATH):
-            parent = el.getparent()
-            if parent is not None:
-                parent.remove(el)
-        return tree
+    def title(tree: lxhtml.HtmlElement) -> str:
+        """Extract the document title from ``<title>`` or the first ``<h1>``."""
+        if title := tree.findtext(".//title"):
+            return _TITLE_SUFFIX_RE.sub("", title.strip()).strip()
+        return (tree.findtext(".//h1") or "").strip()
 
-    @classmethod
-    def title(cls, tree: Any) -> str:
-        """Extract the document title from ``<title>`` or first ``<h1>``."""
-        title_el = tree.xpath(".//title")
-        if title_el and title_el[0].text:
-            return cls._title_re.sub("", title_el[0].text.strip()).strip()
-        h1 = tree.xpath(".//h1")
-        if h1 and h1[0].text:
-            return h1[0].text.strip()
-        return ""
+    @staticmethod
+    def sections(tree: lxhtml.HtmlElement) -> list[Section]:
+        """Extract h1-h4 headings as ``Section`` objects."""
+        tree = PageParser.remove_chrome(tree)
+        return [
+            Section(level=str(el.tag), text=text, id=str(el.get("id", "")))
+            for el in tree.iter(*_HEADING_TAGS)
+            if (text := el.text_content().strip())
+        ]
 
-    @classmethod
-    def text(cls, tree: Any) -> str:
+    @staticmethod
+    def text(tree: lxhtml.HtmlElement) -> str:
         """Return cleaned plain-text of the page body."""
-        tree = cls.remove_chrome(tree)
-        root = cls._find_content_root(tree)
+        tree = PageParser.remove_chrome(tree)
+        root = PageParser._find_content_root(tree)
         parts: list[str] = []
-        cls._walk_text(root, parts)
-        raw = " ".join(parts)
-        raw = re.sub(r"[ \t]+", " ", raw)
-        return re.sub(r"\n{3,}", "\n\n", raw).strip()
+
+        PageParser._walk_text(root, parts)
+        return PageParser._normalize_whitespace(" ".join(parts))
 
     @staticmethod
-    def _find_content_root(tree: Any) -> Any:
-        for xp in (
-            './/div[@role="main"]',
-            './/div[@class="document"]',
-            './/div[contains(@class,"body")]',
-            ".//body",
-        ):
-            candidates = tree.xpath(xp)
-            if candidates:
-                return candidates[0]
-        return tree
-
-    @staticmethod
-    def _walk_text(el: Any, parts: list[str]) -> None:
-        tag = el.tag if isinstance(el.tag, str) else ""
-
-        if el.text:
-            t = el.text.strip()
-            if t:
-                parts.append(t)
-
-        for child in el:
-            child_tag = child.tag if isinstance(child.tag, str) else ""
-            if child_tag == "br":
-                parts.append("\n")
-            else:
-                PageParser._walk_text(child, parts)
-            if child.tail:
-                t = child.tail.strip()
-                if t:
-                    parts.append(t)
-
-        if tag in _BLOCK_TAGS:
-            parts.append("\n")
-
-    @classmethod
-    def api_signature(cls, tree: Any, object_path: str) -> ApiSignature | None:
+    def api_signature(
+        tree: lxhtml.HtmlElement, object_path: str
+    ) -> ApiSignature | None:
+        """Extract a single API signature (function/class/method/...) by its anchor id."""
         heading = next(iter(tree.xpath(f"//dt[@id='{object_path}']")), None)
         if heading is None:
             return None
@@ -159,50 +135,83 @@ class PageParser:
         if description is None or description.tag != "dd":
             return None
 
-        parent = heading.getparent()
-        kind = next(
-            (
-                t
-                for t in (parent.get("class", "") if parent is not None else "").split()
-                if t
-                in {
-                    "function",
-                    "class",
-                    "method",
-                    "property",
-                    "staticmethod",
-                    "classmethod",
-                    "attribute",
-                }
-            ),
-            "unknown",
+        return ApiSignature(
+            name=object_path.split(".")[-1],
+            qualified_name=object_path,
+            type=PageParser._api_kind(heading),
+            signature=heading.text_content().strip(),
+            parameters=[
+                stripped
+                for el in heading.xpath(".//*[contains(@class, 'sig-param')]")
+                if (stripped := el.text_content().strip())
+            ],
+            docstring=PageParser._description_text(description),
+            version_added=PageParser._version_added(description),
         )
 
-        version_added = next(
+    @staticmethod
+    def remove_chrome(tree: lxhtml.HtmlElement) -> lxhtml.HtmlElement:
+        """Remove navigation, sidebar, footer, etc. from the tree in place."""
+        for element in tree.xpath(_REMOVE_XPATH):
+            parent = element.getparent()
+            if parent is not None:
+                parent.remove(element)
+        return tree
+
+    @staticmethod
+    def _normalize_whitespace(text: str) -> str:
+        text = _COLLAPSE_SPACES_RE.sub(" ", text)
+        text = _COLLAPSE_BLANK_LINES_RE.sub("\n\n", text)
+        return text.strip()
+
+    @staticmethod
+    def _find_content_root(tree: lxhtml.HtmlElement) -> lxhtml.HtmlElement:
+        return next(
+            (root for xpath in _CONTENT_ROOT_XPATHS for root in tree.xpath(xpath)),
+            tree,
+        )
+
+    @staticmethod
+    def _walk_text(el: lxhtml.HtmlElement, parts: list[str]) -> None:
+        tag = el.tag if isinstance(el.tag, str) else ""
+
+        if el.text and (stripped := el.text.strip()):
+            parts.append(stripped)
+
+        for child in el:
+            child_tag = child.tag if isinstance(child.tag, str) else ""
+            if child_tag == "br":
+                parts.append("\n")
+            else:
+                PageParser._walk_text(child, parts)
+
+            if child.tail and (stripped_tail := child.tail.strip()):
+                parts.append(stripped_tail)
+
+        if tag in _BLOCK_TAGS:
+            parts.append("\n")
+
+    @staticmethod
+    def _api_kind(heading: lxhtml.HtmlElement) -> str:
+        parent = heading.getparent()
+        classes: list[str] = (
+            parent.get("class", "").split() if parent is not None else []
+        )
+        return next((c for c in classes if c in _API_KIND_TAGS), "unknown")
+
+    @staticmethod
+    def _version_added(description: lxhtml.HtmlElement) -> str | None:
+        return next(
             (
-                el.text_content().strip()
+                stripped
                 for el in description.xpath(".//*[contains(@class, 'versionadded')]")
-                if el.text_content().strip()
+                if (stripped := el.text_content().strip())
             ),
             None,
         )
 
-        return ApiSignature(
-            name=object_path.split(".")[-1],
-            qualified_name=object_path,
-            type=kind,
-            signature=str(heading.text_content().strip()),
-            parameters=[
-                str(el.text_content().strip())
-                for el in heading.xpath(".//*[contains(@class, 'sig-param')]")
-                if el.text_content().strip()
-            ],
-            docstring=cls._description_text(description),
-            version_added=version_added,
-        )
-
     @staticmethod
-    def _description_text(description: Any) -> str:
+    def _description_text(description: lxhtml.HtmlElement) -> str:
         for nested in description.xpath(".//dl"):
             parent = nested.getparent()
             if parent is not None:
@@ -210,22 +219,4 @@ class PageParser:
 
         parts: list[str] = []
         PageParser._walk_text(description, parts)
-        raw = re.sub(r"[ \t]+", " ", " ".join(parts))
-        return re.sub(r"\n{3,}", "\n\n", raw).strip()
-
-    @staticmethod
-    def sections(tree: Any) -> list[Section]:
-        """Extract h1-h4 headings as ``Section`` objects."""
-        tree = PageParser.remove_chrome(tree)
-        result: list[Section] = []
-        for el in tree.iter("h1", "h2", "h3", "h4"):
-            text = str(el.text_content().strip())
-            if text:
-                result.append(
-                    Section(
-                        level=str(el.tag),
-                        text=text,
-                        id=str(el.get("id", "")),
-                    ),
-                )
-        return result
+        return PageParser._normalize_whitespace(" ".join(parts))

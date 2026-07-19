@@ -34,18 +34,27 @@ from pysphinx_mcp.types._errors import DocsClientError
 
 
 class AsyncDocsClient:
+    """Async HTTP client with a lock-guarded session."""
+
     def __init__(self) -> None:
         self._session: AsyncSession[Any] | None = None
         self._lock = asyncio.Lock()
 
     async def _ensure_session(self) -> AsyncSession[Any]:
-        if self._session is None:
-            async with self._lock:
-                if self._session is None:
-                    self._session = AsyncSession(impersonate="chrome")
+        """Return the shared session, creating it under a lock if needed."""
+        if self._session is not None:
+            return self._session
+        async with self._lock:
+            if self._session is None:
+                self._session = AsyncSession(impersonate="chrome")
         return self._session
 
     async def fetch_text(self, url: str, *, timeout: float = 30.0) -> str:
+        """Fetch *url* and return the response body as text.
+
+        Raises ``DocsClientError`` for any network, timeout, or
+        non-2xx response.
+        """
         session = await self._ensure_session()
         try:
             resp = await session.get(url, timeout=timeout)
@@ -55,12 +64,15 @@ class AsyncDocsClient:
             raise DocsClientError(str(exc)) from exc
 
     async def close(self) -> None:
-        if self._session is not None:
-            await self._session.close()
-            self._session = None
+        """Close the underlying session, if one was opened."""
+        if self._session is None:
+            return
+        await self._session.close()
+        self._session = None
 
     @asynccontextmanager
     async def lifespan(self) -> AsyncGenerator[Self]:
+        """Yield ``self``, closing the session on exit even if an error occurs."""
         try:
             yield self
         finally:

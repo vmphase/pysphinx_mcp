@@ -29,7 +29,7 @@ _service = DocsService()
 
 mcp = FastMCP(
     "Sphinx Docs Reader",
-    instructions="Read and search Sphinx-generated documentation sites. "
+    instructions="Read and search Sphinx-generated docs."
     "Provide a base URL to any Sphinx docs site to browse, search, "
     "and read pages using the Sphinx search index for fast lookups.",
 )
