@@ -21,14 +21,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .fetcher import FetchError
 from .parser import PageParser
 from .search import SearchIndex
 from .service import DocsService
 
 __all__ = (
     "DocsService",
-    "FetchError",
     "PageParser",
     "SearchIndex",
 )
