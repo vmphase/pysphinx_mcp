@@ -65,8 +65,6 @@ exclude = [".ruff_cache/", "__pycache__/"]
 
 [tool.ruff]
 exclude = [".ruff_cache/", "__pycache__/"]
-
-[tool.ruff.format]
 target-version = "py312"
 
 [tool.ruff.lint]
