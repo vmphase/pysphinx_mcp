@@ -23,32 +23,29 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import re
-from typing import Any, ClassVar
+from typing import Any
 
 import msgspec
 
-from pysphinx_mcp.types._errors import SearchIndexError
+from pysphinx_mcp.core.utils import EXTRACT_RE
+from pysphinx_mcp.types.errors import SearchIndexError
 
 
 class SearchIndex:
     """Wraps the parsed content of a Sphinx ``searchindex.js`` file."""
-
-    _extract_re: ClassVar[re.Pattern[str]] = re.compile(
-        r"Search\.setIndex\((\{.*\})\)\s*;?\s*$",
-        re.DOTALL,
-    )
 
     def __init__(self, data: dict[str, Any]) -> None:
         self._raw = data
 
     @classmethod
     def from_js(cls, content: str) -> SearchIndex:
-        match = cls._extract_re.search(content)
+        """Parse a ``searchindex.js`` payload."""
+        match = EXTRACT_RE.search(content)
         if not match:
             raise SearchIndexError(
-                "could not locate Search.setIndex() in searchindex.js",
+                "could not locate Search.setIndex() in searchindex.js"
             )
+
         try:
             return cls(msgspec.json.decode(match.group(1)))
         except msgspec.ValidationError as exc:
@@ -56,36 +53,36 @@ class SearchIndex:
 
     @property
     def docnames(self) -> list[str]:
+        """Document names, in index order."""
         return list(self._raw.get("docnames", []))
 
     @property
     def titles(self) -> list[str]:
+        """Document titles, in the same order as ``docnames``."""
         return list(self._raw.get("titles", []))
 
     def path_for(self, docname: str) -> str:
+        """Return the HTML path for a given document name."""
         if docname in ("", "index"):
             return "index.html"
         return f"{docname}.html"
 
     def search(self, query: str) -> list[dict[str, str]]:
-        q = query.lower()
-        if not q:
+        """Return ``{"path", "title"}`` hits whose indexed term contains ``query``."""
+        needle = query.lower()
+        if not needle:
             return []
 
         terms: dict[str, int | list[int]] = self._raw.get("terms", {})
         matched: set[int] = set()
 
         for term, ids in terms.items():
-            if q in term.lower():
-                if isinstance(ids, int):
-                    matched.add(ids)
-                else:
-                    matched.update(ids)
+            if needle not in term.lower():
+                continue
+            matched.update(ids if isinstance(ids, list) else (ids,))
 
-        docnames = self.docnames
-        titles = self.titles
         return [
-            {"path": self.path_for(docnames[i]), "title": titles[i]}
+            {"path": self.path_for(self.docnames[i]), "title": self.titles[i]}
             for i in sorted(matched)
-            if i < len(titles) and titles[i]
+            if i < len(self.docnames) and i < len(self.titles) and self.titles[i]
         ]

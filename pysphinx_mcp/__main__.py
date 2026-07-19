@@ -21,6 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from pysphinx_mcp._server import mcp
+from pysphinx_mcp.server import mcp
 
 mcp.run()

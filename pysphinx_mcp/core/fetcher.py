@@ -23,45 +23,35 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import asyncio
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
-from typing import Any, Self
+from typing import Any
 
 from curl_cffi.requests import AsyncSession
 
-from pysphinx_mcp.types._errors import DocsClientError
+from pysphinx_mcp.types.errors import FetchError
 
 
-class AsyncDocsClient:
+class PageFetcher:
+    """Thin async HTTP client for fetching doc pages."""
+
     def __init__(self) -> None:
-        self._session: AsyncSession[Any] | None = None
-        self._lock = asyncio.Lock()
+        self._session: Any = None
 
-    async def _ensure_session(self) -> AsyncSession[Any]:
+    async def _get_session(self) -> Any:
         if self._session is None:
-            async with self._lock:
-                if self._session is None:
-                    self._session = AsyncSession(impersonate="chrome")
+            self._session = AsyncSession(impersonate="chrome")
         return self._session
 
-    async def fetch_text(self, url: str, *, timeout: float = 30.0) -> str:
-        session = await self._ensure_session()
+    async def fetch(self, url: str, *, timeout: float = 30.0) -> str:
+        session = await self._get_session()
         try:
             resp = await session.get(url, timeout=timeout)
             resp.raise_for_status()
             return resp.text
         except Exception as exc:
-            raise DocsClientError(str(exc)) from exc
+            raise FetchError(str(exc)) from exc
 
     async def close(self) -> None:
-        if self._session is not None:
-            await self._session.close()
-            self._session = None
-
-    @asynccontextmanager
-    async def lifespan(self) -> AsyncGenerator[Self]:
-        try:
-            yield self
-        finally:
-            await self.close()
+        if self._session is None:
+            return None
+        await self._session.close()
+        self._session = None

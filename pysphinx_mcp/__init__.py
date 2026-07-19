@@ -21,7 +21,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from pysphinx_mcp._server import (
+from pysphinx_mcp._version import __version__, version_info
+from pysphinx_mcp.server import (
     get_api_signature,
     list_pages,
     list_sections,
@@ -29,7 +30,6 @@ from pysphinx_mcp._server import (
     read_page,
     search_docs,
 )
-from pysphinx_mcp._version import __version__, version_info
 
 __all__ = (
     "__version__",

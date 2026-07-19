@@ -65,6 +65,7 @@ exclude = [".ruff_cache/", "__pycache__/"]
 
 [tool.ruff]
 exclude = [".ruff_cache/", "__pycache__/"]
+target-version = "py312"
 
 [tool.ruff.lint]
 select = [
@@ -95,6 +96,7 @@ ignore = [
 
     "F403",
     "F405",
+    "W293",
 
     "RUF001",
     "RUF002",

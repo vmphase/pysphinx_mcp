@@ -21,13 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from pysphinx_mcp.types._errors import (
+from pysphinx_mcp.types.errors import (
     DocsClientError,
     FetchError,
     ParseError,
     SearchIndexError,
 )
-from pysphinx_mcp.types._models import ApiSignature, PageInfo, Section
+from pysphinx_mcp.types.models import ApiSignature, PageInfo, Section
 
 __all__ = (
     "ApiSignature",

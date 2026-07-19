@@ -23,39 +23,39 @@ SOFTWARE.
 
 from mcp.server.fastmcp import FastMCP
 
-from pysphinx_mcp.core._service import DocsService
+from pysphinx_mcp.core.service import DocsService
 
-_service = DocsService()
+service = DocsService()
 
 mcp = FastMCP(
     "Sphinx Docs Reader",
-    instructions="Read and search Sphinx-generated documentation sites. "
+    instructions="Read and search Sphinx-generated docs."
     "Provide a base URL to any Sphinx docs site to browse, search, "
     "and read pages using the Sphinx search index for fast lookups.",
 )
 
 
 async def list_pages(base_url: str) -> list[dict[str, str]]:
-    return await _service.list_pages(base_url)
+    return await service.list_pages(base_url)
 
 
 async def search_docs(base_url: str, query: str) -> list[dict[str, str]]:
-    return await _service.search(base_url, query)
+    return await service.search(base_url, query)
 
 
 async def read_page(base_url: str, page_path: str) -> str:
-    return await _service.read(base_url, page_path)
+    return await service.read(base_url, page_path)
 
 
 async def list_sections(base_url: str, page_path: str) -> list[dict[str, str]]:
-    return await _service.sections(base_url, page_path)
+    return await service.sections(base_url, page_path)
 
 
 async def get_api_signature(
     base_url: str,
     object_path: str,
 ) -> dict[str, object] | None:
-    return await _service.api_signature(base_url, object_path)
+    return await service.api_signature(base_url, object_path)
 
 
 mcp.tool()(list_pages)
