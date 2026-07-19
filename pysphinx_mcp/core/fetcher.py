@@ -27,7 +27,7 @@ from typing import Any
 
 from curl_cffi.requests import AsyncSession
 
-from pysphinx_mcp.types._errors import FetchError
+from pysphinx_mcp.types.errors import FetchError
 
 
 class PageFetcher:

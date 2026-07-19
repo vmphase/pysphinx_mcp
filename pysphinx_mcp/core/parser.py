@@ -25,17 +25,17 @@ from __future__ import annotations
 
 from lxml import html as lxhtml
 
-from pysphinx_mcp.types import ApiSignature, Section
-from pysphinx_mcp.utils import (
-    _API_KIND_TAGS,
-    _BLOCK_TAGS,
-    _COLLAPSE_BLANK_LINES_RE,
-    _COLLAPSE_SPACES_RE,
-    _CONTENT_ROOT_XPATHS,
-    _HEADING_TAGS,
-    _REMOVE_XPATH,
-    _TITLE_SUFFIX_RE,
+from pysphinx_mcp.core.utils import (
+    API_KIND_TAGS,
+    BLOCK_TAGS,
+    COLLAPSE_BLANK_LINES_RE,
+    COLLAPSE_SPACES_RE,
+    CONTENT_ROOT_XPATHS,
+    HEADING_TAGS,
+    REMOVE_XPATH,
+    TITLE_SUFFIX_RE,
 )
+from pysphinx_mcp.types import ApiSignature, Section
 
 
 class PageParser:
@@ -53,7 +53,7 @@ class PageParser:
     def title(tree: lxhtml.HtmlElement) -> str:
         """Extract the document title from ``<title>`` or the first ``<h1>``."""
         if title := tree.findtext(".//title"):
-            return _TITLE_SUFFIX_RE.sub("", title.strip()).strip()
+            return TITLE_SUFFIX_RE.sub("", title.strip()).strip()
         return (tree.findtext(".//h1") or "").strip()
 
     @staticmethod
@@ -62,7 +62,7 @@ class PageParser:
         tree = PageParser.remove_chrome(tree)
         return [
             Section(level=str(el.tag), text=text, id=str(el.get("id", "")))
-            for el in tree.iter(*_HEADING_TAGS)
+            for el in tree.iter(*HEADING_TAGS)
             if (text := el.text_content().strip())
         ]
 
@@ -106,7 +106,7 @@ class PageParser:
     @staticmethod
     def remove_chrome(tree: lxhtml.HtmlElement) -> lxhtml.HtmlElement:
         """Remove navigation, sidebar, footer, etc. from the tree in place."""
-        for element in tree.xpath(_REMOVE_XPATH):
+        for element in tree.xpath(REMOVE_XPATH):
             parent = element.getparent()
             if parent is not None:
                 parent.remove(element)
@@ -114,14 +114,14 @@ class PageParser:
 
     @staticmethod
     def _normalize_whitespace(text: str) -> str:
-        text = _COLLAPSE_SPACES_RE.sub(" ", text)
-        text = _COLLAPSE_BLANK_LINES_RE.sub("\n\n", text)
+        text = COLLAPSE_SPACES_RE.sub(" ", text)
+        text = COLLAPSE_BLANK_LINES_RE.sub("\n\n", text)
         return text.strip()
 
     @staticmethod
     def _find_content_root(tree: lxhtml.HtmlElement) -> lxhtml.HtmlElement:
         return next(
-            (root for xpath in _CONTENT_ROOT_XPATHS for root in tree.xpath(xpath)),
+            (root for xpath in CONTENT_ROOT_XPATHS for root in tree.xpath(xpath)),
             tree,
         )
 
@@ -142,7 +142,7 @@ class PageParser:
             if child.tail and (stripped_tail := child.tail.strip()):
                 parts.append(stripped_tail)
 
-        if tag in _BLOCK_TAGS:
+        if tag in BLOCK_TAGS:
             parts.append("\n")
 
     @staticmethod
@@ -151,7 +151,7 @@ class PageParser:
         classes: list[str] = (
             parent.get("class", "").split() if parent is not None else []
         )
-        return next((c for c in classes if c in _API_KIND_TAGS), "unknown")
+        return next((c for c in classes if c in API_KIND_TAGS), "unknown")
 
     @staticmethod
     def _version_added(description: lxhtml.HtmlElement) -> str | None:

@@ -29,10 +29,10 @@ from urllib.parse import urljoin
 
 import msgspec
 
-from pysphinx_mcp.core._fetcher import PageFetcher
-from pysphinx_mcp.core._parser import PageParser
-from pysphinx_mcp.core._search import SearchIndex
-from pysphinx_mcp.types._errors import FetchError, SearchIndexError
+from pysphinx_mcp.core.fetcher import PageFetcher
+from pysphinx_mcp.core.parser import PageParser
+from pysphinx_mcp.core.search import SearchIndex
+from pysphinx_mcp.types.errors import FetchError, SearchIndexError
 
 
 @lru_cache(maxsize=32)

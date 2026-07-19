@@ -21,10 +21,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from ._fetcher import FetchError
-from ._parser import PageParser
-from ._search import SearchIndex
-from ._service import DocsService
+from .fetcher import FetchError
+from .parser import PageParser
+from .search import SearchIndex
+from .service import DocsService
 
 __all__ = (
     "DocsService",

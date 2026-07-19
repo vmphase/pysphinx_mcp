@@ -23,7 +23,7 @@ SOFTWARE.
 
 from mcp.server.fastmcp import FastMCP
 
-from pysphinx_mcp.core._service import DocsService
+from pysphinx_mcp.core.service import DocsService
 
 _service = DocsService()
 

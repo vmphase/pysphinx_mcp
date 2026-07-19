@@ -27,8 +27,8 @@ from typing import Any
 
 import msgspec
 
-from pysphinx_mcp.types._errors import SearchIndexError
-from pysphinx_mcp.utils import _EXTRACT_RE
+from pysphinx_mcp.core.utils import EXTRACT_RE
+from pysphinx_mcp.types.errors import SearchIndexError
 
 
 class SearchIndex:
@@ -40,7 +40,7 @@ class SearchIndex:
     @classmethod
     def from_js(cls, content: str) -> SearchIndex:
         """Parse a ``searchindex.js`` payload."""
-        match = _EXTRACT_RE.search(content)
+        match = EXTRACT_RE.search(content)
         if not match:
             raise SearchIndexError(
                 "could not locate Search.setIndex() in searchindex.js"

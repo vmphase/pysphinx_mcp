@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import re
 
-_BLOCK_TAGS: frozenset[str] = frozenset(
+BLOCK_TAGS: frozenset[str] = frozenset(
     {
         "p",
         "div",
@@ -50,8 +50,8 @@ _BLOCK_TAGS: frozenset[str] = frozenset(
         "article",
     },
 )
-_HEADING_TAGS: tuple[str, ...] = ("h1", "h2", "h3", "h4")
-_API_KIND_TAGS: frozenset[str] = frozenset(
+HEADING_TAGS: tuple[str, ...] = ("h1", "h2", "h3", "h4")
+API_KIND_TAGS: frozenset[str] = frozenset(
     {
         "function",
         "class",
@@ -63,23 +63,23 @@ _API_KIND_TAGS: frozenset[str] = frozenset(
     },
 )
 
-_REMOVE_XPATH: str = (
+REMOVE_XPATH: str = (
     "//*[@role='navigation'] | //nav | //header | //footer | //aside | "
     "//*[contains(@class,'sidebar')] | //*[contains(@class,'sphinxsidebar')] | "
     "//*[contains(@class,'related')] | //*[@id='sidebar'] | //script | //style"
 )
-_CONTENT_ROOT_XPATHS: tuple[str, ...] = (
+CONTENT_ROOT_XPATHS: tuple[str, ...] = (
     './/div[@role="main"]',
     './/div[@class="document"]',
     './/div[contains(@class,"body")]',
     ".//body",
 )
 
-_TITLE_SUFFIX_RE = re.compile(r"\s*\u2014\s*.+$")
-_COLLAPSE_SPACES_RE = re.compile(r"[ \t]+")
-_COLLAPSE_BLANK_LINES_RE = re.compile(r"\n{3,}")
+TITLE_SUFFIX_RE = re.compile(r"\s*\u2014\s*.+$")
+COLLAPSE_SPACES_RE = re.compile(r"[ \t]+")
+COLLAPSE_BLANK_LINES_RE = re.compile(r"\n{3,}")
 
-_EXTRACT_RE: re.Pattern[str] = re.compile(
+EXTRACT_RE: re.Pattern[str] = re.compile(
     r"Search\.setIndex\((\{.*\})\)\s*;?\s*$",
     re.DOTALL,
 )

@@ -30,7 +30,7 @@ from typing import Any, Self
 
 from curl_cffi.requests import AsyncSession
 
-from pysphinx_mcp.types._errors import DocsClientError
+from pysphinx_mcp.types.errors import DocsClientError
 
 
 class AsyncDocsClient:
