@@ -23,23 +23,16 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import re
-from typing import Any, ClassVar
+from typing import Any
 
 import msgspec
 
 from pysphinx_mcp.types._errors import SearchIndexError
-
-_EXTRACT_RE: re.Pattern[str] = re.compile(
-    r"Search\.setIndex\((\{.*\})\)\s*;?\s*$",
-    re.DOTALL,
-)
+from pysphinx_mcp.utils import _EXTRACT_RE
 
 
 class SearchIndex:
     """Wraps the parsed content of a Sphinx ``searchindex.js`` file."""
-
-    _extract_re: ClassVar[re.Pattern[str]] = _EXTRACT_RE
 
     def __init__(self, data: dict[str, Any]) -> None:
         self._raw = data
@@ -47,7 +40,7 @@ class SearchIndex:
     @classmethod
     def from_js(cls, content: str) -> SearchIndex:
         """Parse a ``searchindex.js`` payload."""
-        match = cls._extract_re.search(content)
+        match = _EXTRACT_RE.search(content)
         if not match:
             raise SearchIndexError(
                 "could not locate Search.setIndex() in searchindex.js"

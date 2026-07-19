@@ -23,65 +23,19 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import re
-
 from lxml import html as lxhtml
 
 from pysphinx_mcp.types import ApiSignature, Section
-
-_BLOCK_TAGS: frozenset[str] = frozenset(
-    {
-        "p",
-        "div",
-        "h1",
-        "h2",
-        "h3",
-        "h4",
-        "h5",
-        "h6",
-        "li",
-        "tr",
-        "td",
-        "th",
-        "pre",
-        "blockquote",
-        "dl",
-        "dd",
-        "dt",
-        "ul",
-        "ol",
-        "section",
-        "article",
-    },
+from pysphinx_mcp.utils import (
+    _API_KIND_TAGS,
+    _BLOCK_TAGS,
+    _COLLAPSE_BLANK_LINES_RE,
+    _COLLAPSE_SPACES_RE,
+    _CONTENT_ROOT_XPATHS,
+    _HEADING_TAGS,
+    _REMOVE_XPATH,
+    _TITLE_SUFFIX_RE,
 )
-_HEADING_TAGS: tuple[str, ...] = ("h1", "h2", "h3", "h4")
-_API_KIND_TAGS: frozenset[str] = frozenset(
-    {
-        "function",
-        "class",
-        "method",
-        "property",
-        "staticmethod",
-        "classmethod",
-        "attribute",
-    },
-)
-
-_REMOVE_XPATH: str = (
-    "//*[@role='navigation'] | //nav | //header | //footer | //aside | "
-    "//*[contains(@class,'sidebar')] | //*[contains(@class,'sphinxsidebar')] | "
-    "//*[contains(@class,'related')] | //*[@id='sidebar'] | //script | //style"
-)
-_CONTENT_ROOT_XPATHS: tuple[str, ...] = (
-    './/div[@role="main"]',
-    './/div[@class="document"]',
-    './/div[contains(@class,"body")]',
-    ".//body",
-)
-
-_TITLE_SUFFIX_RE = re.compile(r"\s*\u2014\s*.+$")
-_COLLAPSE_SPACES_RE = re.compile(r"[ \t]+")
-_COLLAPSE_BLANK_LINES_RE = re.compile(r"\n{3,}")
 
 
 class PageParser:
